@@ -76,7 +76,7 @@ RabbitMQ — давно известный, популярный брокер с
 Файл `docker-compose`: [docker-compose](./docker-compose.yaml)
 
 <details>
-    <summary> Вывод консоли вывод консоли `docker-compose up --build`...  </summary>
+    <summary> Вывод консоли `docker-compose up --build`...  </summary>
 
 ```
 beatl@Sirius:~/ms$ docker-compose up --build

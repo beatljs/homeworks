@@ -69,7 +69,7 @@ RabbitMQ — давно известный, популярный брокер с
 
 Мой вариант решения:
 
-Ссылка на репозиторий.
+Ссылка на репозиторий с файлами: [11-microservices-02-principles](https://github.com/beatljs/homeworks/tree/11-microservices-02-principles)
 
 Файл `nginx.conf`: [nginx.conf](./gateway/nginx.conf)
 

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: test4-nodeport-service
+  namespace: lesson4
+spec:
+  ports:
+    - name: port-nginx
+      port: 9001
+      protocol: TCP
+      targetPort: 80
+      nodePort: 30001
+    - name: port-multitool
+      port: 9002
+      protocol: TCP
+      targetPort: 8080
+      nodePort: 30002
+  selector:
+    app: my-app4
+  type: NodePort

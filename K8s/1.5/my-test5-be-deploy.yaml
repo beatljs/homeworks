@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-test5-be-deployment
+  labels:
+    app: my-backend
+  namespace: lesson5
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-backend
+  template:
+    metadata:
+      labels:
+        app: my-backend
+    spec:
+      containers:
+      - name: backend
+        image: wbitt/network-multitool
+        env:
+        - name: HTTP_PORT
+          value: "8080"

@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-test5-fe-deployment
+  labels:
+    app: my-frontend
+  namespace: lesson5
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-frontend
+  template:
+    metadata:
+      labels:
+        app: my-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:1.14.2

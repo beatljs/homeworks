@@ -6,7 +6,7 @@
 
 ---
 
-## Решение по домашнему заданию к занятию «Сетевое взаимодействие в K8S. Часть 1» 
+## Решение по домашнему заданию к занятию «Сетевое взаимодействие в K8S. Часть 2» 
 
 Домашнее задание выполнялось на локальной машине с ОС Ubuntu 22.04.3 LTS и MicroK8S
 
@@ -24,9 +24,9 @@
 
 [Файл-манифест Deployment для `frontend`](./my-test5-fe-deploy.yaml)
 
-[Файл-манифест Service для `backend`](./my-nginx-svc.yaml)
+[Файл-манифест Service для `backend`](./my-mtool-svc.yaml)
 
-[Файл-манифест Service для `frontend`](./my-mtool-svc.yaml)
+[Файл-манифест Service для `frontend`](./my-nginx-svc.yaml)
 
 <details>
     <summary> Вывод консоли команды `curl` из пода backend для проверки доступа...  </summary>

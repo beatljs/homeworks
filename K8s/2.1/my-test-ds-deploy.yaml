@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: my-test-ds-deployment
+  labels:
+    app: my-ds1
+  namespace: lesson2-1
+spec:
+  selector:
+    matchLabels:
+      app: my-ds1
+  template:
+    metadata:
+      labels:
+        app: my-ds1
+    spec:
+      containers:
+      - name: multitool
+        image: wbitt/network-multitool
+        volumeMounts:
+        - name: my-ds-vol
+          mountPath: /var/log/
+          readOnly: true
+      volumes:
+        - name: my-ds-vol
+          hostPath:
+            path: /var/log/
+

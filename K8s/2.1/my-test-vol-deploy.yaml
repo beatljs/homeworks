@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-test-vol-deployment
+  labels:
+    app: my-vol1
+  namespace: lesson2-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-vol1
+  template:
+    metadata:
+      labels:
+        app: my-vol1
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command: ['sh', '-c', 'v=1; while true; do echo Value is: $v > /output/my-test-file.txt; v=$(($v+1)); sleep 1; done;' ]
+        volumeMounts:
+        - name: my-test-vol
+          mountPath: /output
+      - name: multitool
+        image: wbitt/network-multitool
+        command: ['sh', '-c', 'while true; do cat /input/my-test-file.txt; sleep 2; done;']
+        volumeMounts:
+        - name: my-test-vol
+          mountPath: /input
+      volumes:
+        - name: my-test-vol
+          emptyDir: {}
+

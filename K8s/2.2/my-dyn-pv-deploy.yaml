@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-dyn-pv-deployment
+  labels:
+    app: my-dyn-vol
+  namespace: lesson2-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-dyn-vol
+  template:
+    metadata:
+      labels:
+        app: my-dyn-vol
+    spec:
+      containers:
+      - name: multitool
+        image: wbitt/network-multitool
+        volumeMounts:
+        - name: my-dyn-pv-vol
+          mountPath: /input
+      volumes:
+        - name: my-dyn-pv-vol
+          persistentVolumeClaim:
+            claimName: my-dynamic-pvc
+

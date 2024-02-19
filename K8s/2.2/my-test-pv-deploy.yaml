@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-test-pv-deployment
+  labels:
+    app: my-vol2
+  namespace: lesson2-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-vol2
+  template:
+    metadata:
+      labels:
+        app: my-vol2
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command: ['sh', '-c', 'v=1; while true; do echo Value is: $v > /output/my-test-file.txt; v=$(($v+1)); sleep 5; done;' ]
+        volumeMounts:
+        - name: my-test-pv-vol
+          mountPath: /output
+      - name: multitool
+        image: wbitt/network-multitool
+        command: ['sh', '-c', 'while true; do cat /input/my-test-file.txt; sleep 5; done;']
+        volumeMounts:
+        - name: my-test-pv-vol
+          mountPath: /input
+      volumes:
+        - name: my-test-pv-vol
+          persistentVolumeClaim:
+            claimName: my-test-pvc
+

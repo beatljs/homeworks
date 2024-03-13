@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-tls-configmap
+  namespace: lesson2-3
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>My test nginx HTTPS page!</title>
+      </head>
+      <body>
+        <h1>This is test nginx HTTPS page for NETOLOGY homework!</h1>
+      </body>
+    </html>

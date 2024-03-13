@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-test5-svc
+  namespace: lesson5
+spec:
+  ports:
+    - name: nginx-port
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    - name: multitool-port
+      port: 8080
+      protocol: TCP
+      targetPort: 8080

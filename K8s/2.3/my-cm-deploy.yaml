@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-configmap-deployment
+  labels:
+    app: my-app-cm
+  namespace: lesson2-3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app-cm
+  template:
+    metadata:
+      labels:
+        app: my-app-cm
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        volumeMounts:
+          - name: my-cm-volume
+            mountPath: "/usr/share/nginx/html"
+      - name: multitool
+        image: wbitt/network-multitool
+        env:
+        - name: HTTP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: my-configmap
+              key: http_port
+      volumes:
+      - name: my-cm-volume
+        configMap:
+          name: my-configmap
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-cm-service
+  namespace: lesson2-3
+spec:
+  ports:
+    - name: port-nginx
+      port: 9000
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: my-app-cm

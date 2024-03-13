@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-configmap
+  namespace: lesson2-3
+data:
+  http_port: "8080"
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>My test nginx page!</title>
+      </head>
+      <body>
+        <h1>This test nginx page for NETOLOGY homework!</h1>
+      </body>
+    </html>

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: semen-pod
+  namespace: lesson2-4
+spec:
+  containers:
+  - name: nginx
+    image: nginx

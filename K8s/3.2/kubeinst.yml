@@ -1,0 +1,339 @@
+---
+
+- name: kubeinst
+  gather_facts: true
+  hosts: all
+  vars:
+    ansible_user: ubuntu
+  become: yes
+  become_user: root
+  remote_user: ubuntu
+  tasks:
+  - name: Wait for system to become reachable
+    ansible.builtin.wait_for_connection:
+
+  - name: Create directory for ssh-keys
+    file: state=directory mode=0700 dest=/root/.ssh/
+
+  - name: Adding rsa-key in /root/.ssh/authorized_keys
+    copy: src=~/.ssh/id_ed25519.pub dest=/root/.ssh/authorized_keys owner=root mode=0600
+    ignore_errors: yes
+  - name: Installing dependencies
+    ansible.builtin.apt:
+      pkg:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gpg
+        # - containerd
+      state: latest
+      update_cache: yes
+
+  - name: Add kubernetes apt key
+    apt_key:
+      url: https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key
+
+#  - name: Create temporary file for worker node join command.
+#    ansible.builtin.tempfile:
+#      state: file
+#    register: cmd_tempfile
+
+  - name: Create directory for GPG key
+    file:
+      path: "/etc/apt/keyrings"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Add kubernetes GPG key.
+    block:
+      - name: Create temporary file for kubernetes-apt-keyring.gpg
+        ansible.builtin.tempfile:
+          state: file
+        register: gpg_tempfile
+
+      - name: Create temporary file for armored Release.key.
+        ansible.builtin.tempfile:
+          state: file
+        register: asc_tempfile
+
+      - name: Download GPG key.
+        ansible.builtin.get_url:
+          url: https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key
+          dest: "{{ asc_tempfile.path }}"
+          force: true
+
+      - name: Dearmor GPG key.
+        ansible.builtin.command:
+          argv:
+            - gpg
+            - --yes
+            - -o
+            - "{{ gpg_tempfile.path }}"
+            - --dearmor
+            - "{{ asc_tempfile.path }}"
+
+      - name: Copy GPG key to /etc/apt/keyrings.
+        become: true
+        ansible.builtin.copy:
+          remote_src: true
+          src: "{{ gpg_tempfile.path }}"
+          dest: "/etc/apt/keyrings/kubernetes-apt-keyring.gpg"
+          owner: root
+          group: root
+          mode: u=rw,g=r,o=r
+    always:
+      - name: Remove temporary file for armored key.
+        ansible.builtin.file:
+          path: "{{ asc_tempfile.path }}"
+          state: absent
+
+      - name: Remove temporary file for GPG key.
+        ansible.builtin.file:
+          path: "{{ gpg_tempfile.path }}"
+          state: absent
+
+  - name: "Add kubernetes DEB repository"
+    apt_repository:
+      repo: deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /
+      filename: kubernetes
+
+  - name: Installing kubeadm
+    ansible.builtin.apt:
+      pkg:
+        - kubelet
+        - kubeadm
+        - kubectl
+        - containerd
+      state: latest
+      update_cache: yes
+
+  - name: Load module br_netfilter
+    modprobe:
+      name: br_netfilter
+
+  - name: Set Sysctl fo enable forwarding
+    sysctl:
+      name: "{{ item.name }}"
+      value: "{{ item.value }}"
+      state: present
+    with_items:
+      - name: net.ipv4.ip_forward
+        value: 1
+      - name: net.bridge.bridge-nf-call-iptables
+        value: 1
+      - name: net.bridge.bridge-nf-call-ip6tables
+        value: 1
+      - name: net.bridge.bridge-nf-call-arptables
+        value: 1
+# **********************************************************************************************************
+- name: Start control plane(s)
+  gather_facts: true
+  hosts: control_planes
+  vars:
+    ansible_user: ubuntu
+  become: yes
+  become_user: root
+  remote_user: ubuntu
+  tasks:
+
+    - name: Check if kubeadm has already run
+      stat:
+        path: "/etc/kubernetes/pki/ca.key"
+      register: kubeadm_ca
+
+    - name: show enable_ha
+      debug:
+        var: enable_ha
+# ***********************************************************************************************
+    - name: Install for HA mode
+      when: enable_ha == "true"
+      block:
+        - name: Install keepalived and haproxy
+          ansible.builtin.apt:
+            pkg:
+              - keepalived
+              - haproxy
+            state: present
+            update_cache: yes
+
+        - name: Copy keepalived.conf to master
+          template:
+            src: keepalived.j2
+            dest: /etc/keepalived/keepalived.conf
+          register: keepalived_conf
+
+        - name: Copy haproxy haproxy.cfg
+          template:
+            src: haproxy.j2
+            dest: /etc/haproxy/haproxy.cfg
+          register: haproxy_conf
+
+        - name: Enable keepalived and haproxy
+          service:
+            name: "{{ item }}"
+            state: started
+            enabled: yes
+          with_items:
+            - keepalived
+            - haproxy
+
+        - name: Restart keepalived
+          become: yes
+          service:
+            name: keepalived
+            state: restarted
+          when: keepalived_conf.changed
+
+ #       - name: Restart haproxy
+ #         become: yes
+ #         service:
+ #           name: haproxy
+ #           state: restarted
+ #         when: haproxy_conf.changed
+
+# ****************************************************************************************************
+
+        - name: Starting HA kubeadm init for first control node...
+          when: inventory_hostname == groups['control_planes'][0]
+          block:
+          - name: Execute kubeadm init command for first control node
+            when: kubeadm_ca.stat.exists == false
+            ansible.builtin.command:
+              argv:
+                - kubeadm
+                - init
+                - --apiserver-advertise-address={{ advertise_address }}
+                - --pod-network-cidr=10.244.0.0/16
+                - --apiserver-cert-extra-sans={{ cert_extra_sans }}
+                - --control-plane-endpoint={{ control_plane_endpoint }}
+            register: init_result
+          - debug: var=init_result.stdout
+
+          - name: Wait for kubeadm init complete
+            wait_for:
+              path: /etc/kubernetes/pki/ca.key
+
+          - name: Create .kube directory...
+            file:
+              path: "/root/.kube"
+              state: directory
+              owner: root
+              group: root
+              mode: 0755
+
+          - name: Add link for config file
+            file:
+              src: /etc/kubernetes/admin.conf
+              dest: /root/.kube/config
+              state: link
+# Для отладки
+#          - meta: end_play
+
+          - name: Generate join token
+            shell: kubeadm token create
+            register: join_token
+
+          - name: Get discovery-token-ca-cert-hash
+            shell: openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+            register: discovery_token_ca_cert_hash
+
+          - name: Upload certs
+            shell: kubeadm init phase upload-certs --upload-certs | tail -1
+            register: certificate_key
+
+          - name: Get join path
+            shell: kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}' | cut -c9-
+            register: join_path
+
+# *********************************************************************************************************************
+
+        - name: Starting HA kubeadm init for other control node(s)...
+          when: kubeadm_ca.stat.exists == false and inventory_hostname != groups['control_planes'][0]
+          block:
+            - name: Execute join command
+              ansible.builtin.command:
+                argv:
+                  - kubeadm
+                  - join
+                  - "{{ hostvars[groups['control_planes'][0]].join_path.stdout }}"
+                  - --token={{ hostvars[groups['control_planes'][0]].join_token.stdout }}
+                  - --discovery-token-ca-cert-hash=sha256:{{ hostvars[groups['control_planes'][0]].discovery_token_ca_cert_hash.stdout }}
+                  - --control-plane
+                  - --certificate-key={{ hostvars[groups['control_planes'][0]].certificate_key.stdout }}
+
+# ****************************************************************************************************************************
+
+    - name: Install for not HA mode
+      when: enable_ha == "false" and kubeadm_ca.stat.exists == false
+      ansible.builtin.command:
+        argv:
+          - kubeadm
+          - init
+          - --apiserver-advertise-address={{ advertise_address }}
+          - --pod-network-cidr=10.244.0.0/16
+          - --apiserver-cert-extra-sans={{ cert_extra_sans }}
+
+    - name: Wait for kubeadm init complete
+      wait_for:
+        path: /etc/kubernetes/pki/ca.key
+
+    - name: Create .kube directory...
+      file:
+        path: "/root/.kube"
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Add link for config file
+      file:
+        src: /etc/kubernetes/admin.conf
+        dest: /root/.kube/config
+        state: link
+
+    - name: Install flanel...
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - apply
+          - -f
+          - https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+  #        - --validate=false
+
+    - name: Get worker node join command...
+      when: inventory_hostname == groups['control_planes'][0]
+      ansible.builtin.command:
+        argv:
+          - kubeadm
+          - token
+          - create
+          - --print-join-command
+      register: node_join_cmd
+
+    - name: Copy join command to file.
+      become: false
+      ansible.builtin.copy:
+        content: "{{ node_join_cmd.stdout }}"
+        dest: ~/cmd_file.txt
+        mode: u=rw,g=r,o=r
+      delegate_to: localhost
+# ******************************************************************************************************************
+- name: Join nodes
+  gather_facts: true
+  hosts: worker_nodes
+  vars:
+    ansible_user: ubuntu
+  become: yes
+  become_user: root
+  remote_user: ubuntu
+  tasks:
+  - name: Check if kubeadm has already run
+    stat:
+      path: "/etc/kubernetes/pki/ca.crt"
+    register: kubeadm_ca
+
+  - name: Execute kubeadm join...
+    when: kubeadm_ca.stat.exists == False
+    shell: "{{ lookup('file', '~/cmd_file.txt') }}"

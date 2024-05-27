@@ -400,6 +400,10 @@ Server: cloudflare
 CF-RAY: 88a75159eed29e27-DME
 alt-svc: h3=":443"; ma=86400
 
+ubuntu@private-node:~$ curl ifconfig.co
+
+84.201.135.160
+
 ubuntu@private-node:~$ exit
 logout
 Connection to 192.168.20.25 closed.

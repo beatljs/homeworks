@@ -25,9 +25,9 @@
 
 Для выполнения домашнего задания создан два сценария terraform. 
 
-Один - для тетстирования Network Load Balancer
+Первый - для тетстирования Network Load Balancer
 
-Один - для тетстирования Application Load Balancer
+Второй - для тетстирования Application Load Balancer
 
 Сценарии Terraform создают в облаке ресурсы в соответствии с домашним заданием.
 

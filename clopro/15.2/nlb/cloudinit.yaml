@@ -1,0 +1,13 @@
+#cloud-config
+users:
+  - name: beatl
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL)NOPASSWD:ALL']
+    ssh-authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFzIYA9F1G3dSQ6Ngnk+XSFESJgTn1Rx4ghJ0wv6WSvN beatl@OWEN
+packages:
+  - net-tools       
+runcmd:
+  - echo '<html> <body> <h1> Netology cloud providers lesson</h1> <img src="https://storage.yandexcloud.net/beatl-bucket/image-1" height="360px"> </body> </html>' > /var/www/html/index.html
+  - service apache2 restart

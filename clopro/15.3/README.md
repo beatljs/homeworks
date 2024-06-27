@@ -203,7 +203,7 @@ Apply complete! Resources: 8 added, 0 changed, 0 destroyed.
 </details>
 
 <details>
-    <summary> Результат проверки доступа из Интернет к сайту по HTTPS...  </summary>
+    <summary> 3. Результат проверки доступа из Интернет к сайту по HTTPS...  </summary>
 
 ![](./images/https.png)
 

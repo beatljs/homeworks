@@ -1,0 +1,12 @@
+%{~ for k,v in config ~}
+[${k}]
+  %{~ for i in v ~}
+    ${i["name"]}   ansible_host=${i["network_interface"][0]["nat_ip_address"]}
+  %{~ endfor ~}
+%{~ endfor ~}
+
+[all:vars]
+cert_extra_sans=${config["control_planes"][0]["network_interface"][0]["nat_ip_address"]}
+advertise_address=${config["control_planes"][0]["network_interface"][0]["ip_address"]}
+control_plane_endpoint=192.158.218.189
+enable_ha=${ha}

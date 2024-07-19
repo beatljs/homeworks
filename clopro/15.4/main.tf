@@ -4,7 +4,7 @@ resource "yandex_vpc_network" "beatl-net" {
 
 resource "yandex_dns_zone" "beatl-dns-zone" {
   name        = "beatl-dns-zone"
-  description = "desc"
+  description = "Test DNS zone"
 
   labels = {
     label1 = "label-1-value"
@@ -12,19 +12,18 @@ resource "yandex_dns_zone" "beatl-dns-zone" {
 
   zone             = "beatljs.ru."
   public           = true
-//  private_networks = [yandex_vpc_network.foo.id]
 
   deletion_protection = false
 }
 
-/*
+
 resource "yandex_dns_recordset" "k8s-ingress" {
+  depends_on = [null_resource.deoloy-phpa-and-service]
   zone_id = yandex_dns_zone.beatl-dns-zone.id
   name    = "k8s.beatljs.ru."
   type    = "A"
-  ttl     = 400
-  data = [158.160.158.49]
+  ttl     = 600
+  data = ["${file(var.nlbaddr-filename)}"]
 
 }
 
- */

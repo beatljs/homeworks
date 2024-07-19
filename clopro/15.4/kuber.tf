@@ -9,8 +9,8 @@ resource "yandex_vpc_subnet" "k8s-subnet" {
 resource "yandex_kubernetes_cluster" "k8s-regional" {
   name = "k8s-regional"
   network_id = yandex_vpc_network.beatl-net.id
-  cluster_ipv4_range = "10.10.0.0/16"
-  service_ipv4_range = "10.20.0.0/16"
+  cluster_ipv4_range = var.pods_cidr
+  service_ipv4_range = var.services_cidr
   master {
     dynamic "master_location" {
       for_each = yandex_vpc_subnet.k8s-subnet
@@ -25,13 +25,12 @@ resource "yandex_kubernetes_cluster" "k8s-regional" {
       yandex_vpc_security_group.k8s-master-whitelist.id
     ]
   }
-  service_account_id      = yandex_iam_service_account.beatl-regional-sa.id
-  node_service_account_id = yandex_iam_service_account.beatl-regional-sa.id
+  service_account_id      = yandex_iam_service_account.beatl-k8s-r-sa.id
+  node_service_account_id = yandex_iam_service_account.beatl-k8s-r-sa.id
   depends_on = [
-    yandex_resourcemanager_folder_iam_member.k8s-clusters-agent,
-    yandex_resourcemanager_folder_iam_member.vpc-public-admin,
+    yandex_resourcemanager_folder_iam_member.role-editor,
     yandex_resourcemanager_folder_iam_member.images-puller,
-    yandex_resourcemanager_folder_iam_member.encrypterDecrypter
+    yandex_resourcemanager_folder_iam_member.loadbalacer
   ]
   kms_provider {
     key_id = yandex_kms_symmetric_key.k8s-kms-key.id
@@ -100,8 +99,6 @@ resource "yandex_kubernetes_node_group" "k8s-beatl-ng" {
   node_labels = {
     node-label1 = "node-value1"
   }
-
-//  node_taints = ["taint1=taint-value1:NoSchedule"]
 
   labels = {
     "template-label1" = "template-value1"

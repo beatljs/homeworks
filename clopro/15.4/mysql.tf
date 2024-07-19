@@ -55,3 +55,4 @@ resource "yandex_mdb_mysql_user" "db_users" {
   authentication_plugin = "MYSQL_NATIVE_PASSWORD"
 
 }
+

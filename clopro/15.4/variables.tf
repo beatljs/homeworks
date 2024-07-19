@@ -23,7 +23,7 @@ variable "vpc_name" {
   description = "VPC network name"
 }
 
-variable "selected_zones" {
+variable "mysql_selected_zones" {
   type = list(map(any))
   default  =   [
       {
@@ -96,9 +96,24 @@ variable "mysql-db-password" {
   sensitive = true
 }
 
+variable "pods_cidr" {
+  type = string
+  default = "10.144.0.0/16"
+}
+
+variable "services_cidr" {
+  type = string
+  default = "10.145.0.0/16"
+}
+
 variable "ca_cert" {
   type = string
   sensitive = true
+}
+
+variable "nlbaddr-filename" {
+  type = string
+  default = "nlb-addr.dat"
 }
 
 variable "vms_resources" {
